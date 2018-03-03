@@ -1,0 +1,6 @@
+infinispan:
+  remote:
+    server-list: infinispan-app-hotrod:11222
+
+openwhisk:
+  apiHost: "http://nginx.openwhisk.svc.cluster.local/api/v1/namespaces/_/triggers"
