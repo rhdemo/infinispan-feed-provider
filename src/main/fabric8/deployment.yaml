@@ -13,3 +13,13 @@ spec:
            value: "true"
          - name: AB_OFF
            value: "true"
+         - name: COUCHDB_USER
+           valueFrom:
+             secretKeyRef:
+               name: tiggerstore
+               key: couchdbuser
+         - name: COUCHDB_PASSWORD
+           valueFrom:
+             secretKeyRef:
+               name: tiggerstore
+               key: couchdbpassword

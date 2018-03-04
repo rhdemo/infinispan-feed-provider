@@ -2,5 +2,19 @@ infinispan:
   remote:
     server-list: infinispan-app-hotrod:11222
 
+spring:
+  couchbase:
+    bootstrap-hosts: triggerstore
+    env:
+      timeouts:
+        connect: 10000ms
+        socket-connect: 10000ms
+    bucket:
+      name: "default"
+      password: ""
+  data:
+    couchbase:
+      auto-index: true
+
 openwhisk:
   apiHost: "http://nginx.openwhisk.svc.cluster.local/api/v1/namespaces/_/triggers"

@@ -9,8 +9,7 @@ import org.infinispan.client.hotrod.event.ClientCacheEntryCreatedEvent;
 import org.infinispan.client.hotrod.event.ClientCacheEntryModifiedEvent;
 import org.infinispan.client.hotrod.event.ClientCacheEntryRemovedEvent;
 import org.springframework.stereotype.Component;
-import org.workspace7.infinispan.provider.controller.ProviderController;
-import org.workspace7.infinispan.provider.service.EventPayload;
+import org.workspace7.infinispan.provider.data.EventPayload;
 import org.workspace7.infinispan.provider.service.OpenWhiskAPIService;
 
 @Component
@@ -28,7 +27,7 @@ public class FeedCacheListener {
   public void handleCreatedEvent(ClientCacheEntryCreatedEvent e) {
     EventPayload eventData = toPayload("CREATE", e.getKey(), e.getVersion());
     log.info("Create Event {} and data {} ", e.getType(), eventData.toString());
-    openWhiskAPIService.invokeTriggers(eventData, ProviderController.triggerMap);
+    openWhiskAPIService.invokeTriggers(eventData).subscribe();
   }
 
 
@@ -36,14 +35,14 @@ public class FeedCacheListener {
   public void handleModifiedEvent(ClientCacheEntryModifiedEvent e) {
     EventPayload eventData = toPayload("UPDATE", e.getKey(), e.getVersion());
     log.info("Modified Event {} and data {} ", e.getType(), eventData.toString());
-    openWhiskAPIService.invokeTriggers(eventData, ProviderController.triggerMap);
+    openWhiskAPIService.invokeTriggers(eventData).subscribe();
   }
 
   @ClientCacheEntryRemoved
   public void handleRemovedEvent(ClientCacheEntryRemovedEvent e) {
     EventPayload eventData = toPayload("REMOVE", e.getKey(), -1);
     log.info("Removed Event {} and data {} ", e.getType(), eventData.toString());
-    openWhiskAPIService.invokeTriggers(eventData, ProviderController.triggerMap);
+    openWhiskAPIService.invokeTriggers(eventData).subscribe();
   }
 
   private EventPayload toPayload(String eventType, Object key, long version) {

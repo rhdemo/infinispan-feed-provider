@@ -16,7 +16,6 @@ public class DataController {
 
   RemoteCache<Object, Object> remoteCache;
 
-  @Autowired
   public DataController(RemoteCacheManager remoteCacheManager) {
     this.remoteCacheManager = remoteCacheManager;
     this.remoteCache = remoteCacheManager.getCache("default");

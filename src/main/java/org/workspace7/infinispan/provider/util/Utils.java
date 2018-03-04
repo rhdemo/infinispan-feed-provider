@@ -21,9 +21,14 @@ public class Utils {
   }
 
   public static String base64Encoded(String text) {
-    byte[] encodedAuth = Base64.getEncoder().encode(
+    byte[] encodedText = Base64.getEncoder().encode(
       text.getBytes(Charset.forName("US-ASCII")));
-    return new String(encodedAuth);
+    return new String(encodedText);
   }
 
+  public static String base64Decode(String text) {
+    byte[] decodedText = Base64.getDecoder().decode(
+      text.getBytes(Charset.forName("US-ASCII")));
+    return new String(decodedText);
+  }
 }

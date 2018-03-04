@@ -1,0 +1,8 @@
+.mvn
+.editorconfig
+.gitignore
+kedge.yml
+mvnw
+mvnw.cmd
+README.adoc
+couchdb

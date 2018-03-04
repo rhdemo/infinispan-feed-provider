@@ -5,7 +5,6 @@ import org.infinispan.spring.starter.remote.InfinispanRemoteCacheCustomizer;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-import org.workspace7.infinispan.provider.listener.FeedCacheListener;
 
 @SpringBootApplication
 public class FeedProviderApplication {
