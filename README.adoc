@@ -15,6 +15,8 @@ Refer to the following links for more information on Triggers, Rules and Feeds
 [[pre-req]]
 = Pre-requisite
 
+* Create a Minishift profile with `admin-user` and `anyuid` addons enabled.
+These two addons are required to be able to install CouchDB successfully.
 * Deploy https://github.com/infinispan/infinispan-openshift-templates[Infinispan on OpenShift]
 * Deploy https://github.com/kameshsampath/openwhisk-openshift#installing-on-minishift[OpenWhisk on Minishift]
 * http://couchdb.apache.org/[Apache CouchDB] will be used to persist the trigger data
@@ -41,6 +43,8 @@ provider trigger data. The following command shows how to deploy CouchDB:
 
 [code,sh]
 ----
+oc login -u admin  -p admin
+oc project myproject
 oc apply -f couchdb/couchdb.yaml <1>
 ----
 
