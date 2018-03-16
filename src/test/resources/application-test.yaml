@@ -1,0 +1,8 @@
+COUCHDB_USER: admin
+COUCHDB_PASSWORD: password
+TRIGGERSTORE_SERVICE_HOST: localhost
+TRIGGERSTORE_SERVICE_PORT: 5984
+spring:
+  autoconfigure:
+    exclude:
+    - org.infinispan.spring.starter.remote.InfinispanRemoteAutoConfiguration

@@ -9,6 +9,8 @@ import feign.gson.GsonDecoder;
 import feign.gson.GsonEncoder;
 import feign.slf4j.Slf4jLogger;
 import lombok.extern.slf4j.Slf4j;
+import org.infinispan.client.hotrod.ProtocolVersion;
+import org.infinispan.spring.starter.remote.InfinispanRemoteCacheCustomizer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -37,6 +39,12 @@ public class InfinispanProviderConfiguration {
 
   @Value("${TRIGGERSTORE_SERVICE_PORT}")
   private String couchdbPort;
+
+  @Bean
+  public InfinispanRemoteCacheCustomizer customizer() {
+    //TODO fix FOR somereason am not able use Version 27
+    return b -> b.version(ProtocolVersion.PROTOCOL_VERSION_26);
+  }
 
   @Bean
   public RestTemplate restTemplate() {

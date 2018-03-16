@@ -10,9 +10,9 @@ import org.workspace7.infinispan.provider.config.OpenWhiskProperties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@ActiveProfiles(profiles = {"test"})
 @RunWith(SpringRunner.class)
+@SpringBootTest
+@ActiveProfiles(profiles = {"test"})
 public class FeedProviderApplicationTest {
 
   @Autowired
@@ -24,4 +24,5 @@ public class FeedProviderApplicationTest {
     assertThat(openWhiskProperties.getApiHost()).isNotNull();
     assertThat(openWhiskProperties.getApiHost()).isEqualTo("http://nginx.openwhisk.svc.cluster.local/api/v1/namespaces/_/triggers");
   }
+
 }
