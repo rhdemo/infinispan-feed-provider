@@ -1,5 +1,6 @@
 package org.workspace7.infinispan.provider.data;
 
+import com.google.gson.JsonElement;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,7 +13,5 @@ import lombok.NoArgsConstructor;
 public class EventPayload {
   String eventType;
   String key;
-  String verison;
-  @Builder.Default
-  String value = "N.A";
+  String value;
 }
