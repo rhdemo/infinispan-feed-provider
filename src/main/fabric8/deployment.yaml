@@ -16,10 +16,14 @@ spec:
          - name: COUCHDB_USER
            valueFrom:
              secretKeyRef:
-               name: tiggerstore
-               key: couchdbuser
+               name: db.auth
+               key: db_username
          - name: COUCHDB_PASSWORD
            valueFrom:
              secretKeyRef:
-               name: tiggerstore
-               key: couchdbpassword
+               name: db.auth
+               key: db_password
+         - name: TRIGGERSTORE_SERVICE_HOST
+           value: "$(COUCHDB_SERVICE_HOST)"
+         - name: TRIGGERSTORE_SERVICE_PORT
+           value: "$(COUCHDB_SERVICE_PORT_COUCHDB)"

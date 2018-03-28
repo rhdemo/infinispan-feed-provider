@@ -15,51 +15,16 @@ Refer to the following links for more information on Triggers, Rules and Feeds
 [[pre-req]]
 = Pre-requisite
 
-* Create a Minishift profile with `admin-user` and `anyuid` addons enabled.
-These two addons are required to be able to install CouchDB successfully.
-* Deploy https://github.com/infinispan/infinispan-openshift-templates[Infinispan on OpenShift]
-* Deploy https://github.com/kameshsampath/openwhisk-openshift#installing-on-minishift[OpenWhisk on Minishift]
-* http://couchdb.apache.org/[Apache CouchDB] will be used to persist the trigger data
-
-[IMPORTANT]
-====
-* For all the CLI commands to work as it is, deploy OpenWhisk to a OpenShift Project
-called `openwhisk`
-* Deploy applications infinispan and infinispan-feed-provider to `myproject` workspace
-* make user `developer` as admin for both these projects via
-[code,sh]
-----
- oc adm policy add-role-to-user admin developer -n openwhisk
-----
-====
+* The demo environment should already have JDG and OpenWhisk deployed.
 
 [[build-and-deploy]]
 == Build and Deploy
 
-=== Database
-
-As described in <<pre-req>> section this application uses http://couchdb.apache.org/[Apache CouchDB] to persist the
-provider trigger data. The following command shows how to deploy CouchDB:
-
 [code,sh]
 ----
-oc login -u admin  -p admin
-oc project myproject
-oc apply -f couchdb/couchdb.yaml <1>
-----
-
-<1> Deploys CouchDB in OpenShift and sets up the CouchDB for Single Node Environment as said in http://docs.couchdb.org/en/2.1.1/install/setup.html#install-setup
-
-[NOTE]
-====
-OpenWhisk Deployment already has CouchDB deployed, if you wish to use it you can alter the
-**spring.couchbase.bootstrap-hosts** in link:./src/main/resources/application.yaml. Just for sake of
-clarity and to prevent any mess with OpenWhisk data its recommened to deploy seperate.
-====
-
-=== Application
-
-[code,sh]
-----
+oc project openwhisk
 mvn clean package fabric8:deploy
 ----
+
+After successful deployment, you'll have an infinispan-feed-provider
+service created in the openwhisk project.
