@@ -111,7 +111,7 @@ public class TriggerDataService {
     try {
       JsonObject doc = couchDBClient.getDocumentById(DB_NAME, docId);
       log.info("Document Retrieved {}", doc);
-      if (doc != null && doc.get("ok").getAsBoolean()) {
+      if (doc != null) {
         triggerData = gson.fromJson(doc, TriggerData.class);
       }
     } catch (DocumentNotFoundException e) {
