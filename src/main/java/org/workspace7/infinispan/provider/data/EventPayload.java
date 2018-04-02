@@ -14,4 +14,5 @@ public class EventPayload {
   String eventType;
   String key;
   String value;
+  long timestamp;
 }

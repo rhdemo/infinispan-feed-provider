@@ -54,6 +54,7 @@ public class FeedCacheListener {
       .eventType(eventType)
       .key(key)
       .value(value)
+      .timestamp(System.currentTimeMillis())
       .build();
   }
 
