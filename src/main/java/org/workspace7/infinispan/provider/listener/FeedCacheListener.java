@@ -19,7 +19,7 @@ public class FeedCacheListener {
 
   private static final Logger log = LoggerFactory.getLogger(FeedCacheListener.class);
 
-  OpenWhiskAPIService openWhiskAPIService;
+  private final OpenWhiskAPIService openWhiskAPIService;
 
   public FeedCacheListener(OpenWhiskAPIService openWhiskAPIService) {
     this.openWhiskAPIService = openWhiskAPIService;
