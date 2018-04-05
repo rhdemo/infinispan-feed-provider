@@ -48,13 +48,10 @@ public class ProviderController {
 
     log.info("Input Data: {}", data);
 
-    String cacheName = "default";
 
     //TODO validations
     if (!data.isEmpty()) {
-      if (data.containsKey("cache_name")) {
-        cacheName = data.get("cache_name");
-      }
+      String cacheName = data.getOrDefault("cache_name", "default");
 
       TriggerData triggerData = buildTriggerData(data);
 
