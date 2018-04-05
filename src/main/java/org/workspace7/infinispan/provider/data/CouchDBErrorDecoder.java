@@ -5,12 +5,14 @@ import com.google.gson.JsonParser;
 import feign.FeignException;
 import feign.Response;
 import feign.codec.ErrorDecoder;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-@Slf4j
 public class CouchDBErrorDecoder implements ErrorDecoder {
+
+  private static final Logger log = LoggerFactory.getLogger(CouchDBErrorDecoder.class);
 
   @Override
   public Exception decode(String methodKey, Response response) {

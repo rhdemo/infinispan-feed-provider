@@ -1,9 +1,10 @@
 package org.workspace7.infinispan.provider.controller;
 
 import com.google.gson.JsonObject;
-import lombok.extern.slf4j.Slf4j;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,8 +22,9 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/feed")
-@Slf4j
 public class ProviderController {
+
+  private static final Logger log = LoggerFactory.getLogger(ProviderController.class);
 
   private final OpenWhiskAPIService openWhiskAPIService;
   private final RemoteCacheManager remoteCacheManager;
@@ -78,12 +80,10 @@ public class ProviderController {
   }
 
   private TriggerData buildTriggerData(Map<String, String> data) {
-    return TriggerData.builder().authKey(
-      data.get("authKey"))
-      .triggerName(data.get("triggerName"))
-      .triggerShortName(Utils.shortTriggerID(data.get("triggerName")))
-      .hotrodServerHost(data.get("hotrod_server_host"))
-      .hotrodServerPort("hotrod_port").build();
+
+    return new TriggerData(data.get("authKey"), data.get("cacheName"),
+      data.get("triggerName"), Utils.shortTriggerID(data.get("triggerName")),
+      data.get("hotrod_server_host"), data.get("hotrod_port"), null);
   }
 
   /**

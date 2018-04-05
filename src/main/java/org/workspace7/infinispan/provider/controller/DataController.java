@@ -1,16 +1,17 @@
 package org.workspace7.infinispan.provider.controller;
 
-import lombok.extern.slf4j.Slf4j;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@Slf4j
 @RequestMapping("/data")
 public class DataController {
+
+  private static final Logger log = LoggerFactory.getLogger(DataController.class);
 
   RemoteCacheManager remoteCacheManager;
 

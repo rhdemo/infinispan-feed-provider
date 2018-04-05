@@ -1,12 +1,8 @@
 package org.workspace7.infinispan.provider.service;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
-import javax.annotation.PostConstruct;
-
 import com.google.gson.JsonObject;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.workspace7.infinispan.provider.config.OpenWhiskProperties;
@@ -16,12 +12,15 @@ import org.workspace7.infinispan.provider.data.TriggerRequest;
 import org.workspace7.infinispan.provider.service.functions.PostTrigger;
 import org.workspace7.infinispan.provider.util.Utils;
 
-import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Flux;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
-@Slf4j
 public class OpenWhiskAPIService {
+
+  private static final Logger log = LoggerFactory.getLogger(OpenWhiskAPIService.class);
 
   @Autowired
   private OpenWhiskProperties openWhiskProperties;
@@ -32,36 +31,30 @@ public class OpenWhiskAPIService {
   @Autowired
   private PostTrigger postTrigger;
 
-  Flux<TriggerData> fluxOfTriggers = Flux.empty();
-
-  @PostConstruct
-  protected void init() {
-    try {
-      fluxOfTriggers = triggerDataService.findAll();
-    } catch (Exception e) {
-      log.error("Unable to find triggers from DB", e);
-    }
-  }
-
   /**
    * @param payload
    * @return
    */
-  public Flux<JsonObject> invokeTriggers(EventPayload payload) {
-    log.info("Invoking Triggers with Payload {} ", payload);
-    Flux<JsonObject> triggerResponses;
-    triggerResponses = fluxOfTriggers.map(triggerData -> {
-      TriggerRequest.TriggerRequestBuilder requestBuilder = TriggerRequest.builder();
+  public List<JsonObject> invokeTriggers(String cacheName, EventPayload payload) {
+    log.info("Invoking Triggers for Cache {} with Payload {} ", cacheName, payload);
+
+    List<TriggerData> fluxOfTriggers = triggerDataService.findAllByCache(cacheName);
+
+    return fluxOfTriggers.stream().map(triggerData -> {
+      final TriggerRequest requestBuilder = new TriggerRequest();
       try {
-        return requestBuilder.triggerName(triggerData.getTriggerName()).eventPayload(payload)
-            .auth(triggerData.getAuthKey())
-            .uri(new URI(openWhiskProperties.getApiHost() + "/" + Utils.shortTriggerID(triggerData.getTriggerName())))
-            .build();
+        requestBuilder.setTriggerName(triggerData.getTriggerName());
+        requestBuilder.setAuth(triggerData.getAuthKey());
+        requestBuilder.setEventPayload(payload);
+        requestBuilder.setUri(new URI(openWhiskProperties.getApiHost() + "/"
+          + Utils.shortTriggerID(triggerData.getTriggerName())));
+        return requestBuilder;
       } catch (URISyntaxException e) {
         return null;
       }
-    }).filter(triggerRequest -> triggerRequest != null).map(postTrigger);
-    return triggerResponses;
+    }).filter(triggerRequest -> triggerRequest != null)
+      .map(postTrigger)
+      .collect(Collectors.toList());
   }
 
 }

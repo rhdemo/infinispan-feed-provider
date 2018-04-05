@@ -1,13 +1,11 @@
 package org.workspace7.infinispan.provider.util;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.Charset;
 import java.util.Base64;
 
 @Component
-@Slf4j
 public class Utils {
 
   public static String shortTriggerID(String triggerName) {

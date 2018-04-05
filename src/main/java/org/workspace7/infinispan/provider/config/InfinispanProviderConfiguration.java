@@ -8,9 +8,9 @@ import feign.auth.BasicAuthRequestInterceptor;
 import feign.gson.GsonDecoder;
 import feign.gson.GsonEncoder;
 import feign.slf4j.Slf4jLogger;
-import lombok.extern.slf4j.Slf4j;
 import org.infinispan.client.hotrod.ProtocolVersion;
 import org.infinispan.spring.starter.remote.InfinispanRemoteCacheCustomizer;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -25,8 +25,9 @@ import static java.lang.reflect.Modifier.TRANSIENT;
 
 @Configuration
 @EnableConfigurationProperties(OpenWhiskProperties.class)
-@Slf4j
 public class InfinispanProviderConfiguration {
+
+  private static final org.slf4j.Logger log = LoggerFactory.getLogger(InfinispanProviderConfiguration.class);
 
   @Value("${COUCHDB_USER}")
   private String couchdbUser;

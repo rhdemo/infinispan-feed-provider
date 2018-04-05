@@ -1,9 +1,12 @@
 package org.workspace7.infinispan.provider.service;
 
-import com.google.gson.*;
-import lombok.extern.slf4j.Slf4j;
-import org.infinispan.client.hotrod.RemoteCache;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import org.infinispan.client.hotrod.RemoteCacheManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.workspace7.infinispan.provider.data.CouchDBClient;
 import org.workspace7.infinispan.provider.data.DBAlreadyExistsException;
@@ -11,24 +14,29 @@ import org.workspace7.infinispan.provider.data.DocumentNotFoundException;
 import org.workspace7.infinispan.provider.data.TriggerData;
 import org.workspace7.infinispan.provider.listener.FeedCacheListener;
 import org.workspace7.infinispan.provider.util.Utils;
-import reactor.core.publisher.Flux;
 
 import javax.annotation.PostConstruct;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
-@Slf4j
 public class TriggerDataService {
+
+  private static final Logger log = LoggerFactory.getLogger(TriggerDataService.class);
+
+  private static final String[] SELECTOR_FIELDS = {"authKey", "triggerName", "cacheName", "triggerShortName"};
+
 
   private final Gson gson;
   private final RemoteCacheManager remoteCacheManager;
   private final OpenWhiskAPIService openWhiskAPIService;
   private CouchDBClient couchDBClient;
 
-  private static final String DB_NAME = "infinispanfeedtriggers";
+  @Value("${openwhisk.dbName}")
+  private String dbName;
 
-  private static final String[] SELECTOR_FIELDS = {"authKey", "triggerName", "cacheName", "triggerShortName"};
+  //in memory cache
+  Hashtable<String, TriggerData> localTriggerDatas = new Hashtable<>();
 
   public TriggerDataService(CouchDBClient couchDBClient, Gson gson,
                             RemoteCacheManager remoteCacheManager,
@@ -42,10 +50,11 @@ public class TriggerDataService {
   @PostConstruct
   protected void init() {
     try {
-      JsonObject response = couchDBClient.createDB(DB_NAME);
+      JsonObject response = couchDBClient.createDB(dbName);
       Objects.equals(response.get("ok").getAsBoolean(), true);
     } catch (DBAlreadyExistsException e) {
-      log.info("DB {} already exists, skipping creation", DB_NAME);
+      log.info("DB {} already exists, skipping creation", dbName);
+      findAll().forEach(triggerData -> localTriggerDatas.put(Utils.base64Encoded(triggerData.getTriggerName()), triggerData));
     }
     reconstructListenersFromDB();
   }
@@ -53,6 +62,7 @@ public class TriggerDataService {
   private void reconstructListenersFromDB() {
     log.info("Reconstructing all Listeners");
     findAll()
+      .stream()
       .map(triggerData -> remoteCacheManager.getCache(triggerData.getCacheName()))
       .filter(remoteCache -> remoteCache != null)
       .map(remoteCache -> {
@@ -60,7 +70,7 @@ public class TriggerDataService {
         FeedCacheListener feedCacheListener = new FeedCacheListener(openWhiskAPIService);
         remoteCache.addClientListener(feedCacheListener);
         return feedCacheListener;
-      }).subscribe(); //not bothered about return values
+      });
 
   }
 
@@ -70,18 +80,26 @@ public class TriggerDataService {
    */
   public boolean saveOrUpdate(TriggerData triggerData) {
     String docId = Utils.base64Encoded(triggerData.getTriggerName());
+
     JsonObject doc = null;
     log.info("Saving Document {} with ID {}", triggerData, docId);
     Optional<TriggerData> optionalTriggerData = getDocumentById(docId);
     if (optionalTriggerData.isPresent()) {
       String revision = optionalTriggerData.get().getRevision();
       triggerData.setRevision(revision);
-      doc = couchDBClient.saveDoc(DB_NAME, docId, triggerData);
+      doc = couchDBClient.saveDoc(dbName, docId, triggerData);
       log.info("Updated Document {}", doc);
     } else {
-      doc = couchDBClient.saveDoc(DB_NAME, docId, triggerData);
+      doc = couchDBClient.saveDoc(dbName, docId, triggerData);
       log.info("Saved Document {}", doc);
     }
+
+    //Update local cache
+    if (localTriggerDatas.containsKey(docId)) {
+      localTriggerDatas.remove(docId);
+    }
+    localTriggerDatas.put(docId, triggerData);
+
     return doc != null ? doc.get("ok").getAsBoolean() : false;
   }
 
@@ -93,12 +111,11 @@ public class TriggerDataService {
     Optional<TriggerData> optionalTriggerData = getDocumentById(docId);
     if (optionalTriggerData.isPresent()) {
       String revision = optionalTriggerData.get().getRevision();
-      JsonObject response = couchDBClient.deleteDoc(DB_NAME, docId, revision);
+      JsonObject response = couchDBClient.deleteDoc(dbName, docId, revision);
       return response != null ? response.get("ok").getAsBoolean() : false;
-    } else {
-      log.warn("Document with ID {} not found in DB {}", docId, DB_NAME);
-      return false;
     }
+    log.warn("Document with ID {} not found in DB {}", docId, dbName);
+    return false;
   }
 
   /**
@@ -109,13 +126,13 @@ public class TriggerDataService {
     log.info("Getting Document with ID {} " + docId);
     TriggerData triggerData = null;
     try {
-      JsonObject doc = couchDBClient.getDocumentById(DB_NAME, docId);
+      JsonObject doc = couchDBClient.getDocumentById(dbName, docId);
       log.info("Document Retrieved {}", doc);
       if (doc != null) {
         triggerData = gson.fromJson(doc, TriggerData.class);
       }
     } catch (DocumentNotFoundException e) {
-      log.warn("Document with ID {} not found in DB {}", docId, DB_NAME);
+      log.warn("Document with ID {} not found in DB {}", docId, dbName);
     }
     return Optional.ofNullable(triggerData);
   }
@@ -125,38 +142,74 @@ public class TriggerDataService {
    *
    * @return
    */
-  public Flux<TriggerData> findAll() {
+  public List<TriggerData> findAll() {
     log.info("Finding All Documents");
-    JsonObject request = requestSelector();
-    JsonObject response = couchDBClient.allDocs(DB_NAME, request);
-    if (response.has("docs")) {
-      JsonArray jsonElements = response.get("docs").getAsJsonArray();
-      log.debug("Got {} documents", jsonElements.size());
-      return Flux.fromIterable(jsonElements).map(e -> {
-        log.debug("JSON Element {}", e);
-        return gson.fromJson(e, TriggerData.class);
-      });
-    } else {
-      return Flux.empty();
-    }
+    return this.findAllByCache(null); //default get all available documents irrespective of cache
   }
 
   /**
+   * @param cacheName
    * @return
    */
-  private JsonObject requestSelector() {
+  public List<TriggerData> findAllByCache(String cacheName) {
+
+    if (localTriggerDatas == null || localTriggerDatas.isEmpty()) {
+      log.info("Finding All triggers for Cache {} ", cacheName);
+      JsonObject request = requestSelector(SELECTOR_FIELDS[2], cacheName);
+      log.info("find query {}" + request);
+      JsonObject response = couchDBClient.allDocs(dbName, request);
+      List<TriggerData> docs = extractDocs(response, "Got {} documents for query by cache");
+      docs.forEach(triggerData -> localTriggerDatas.put(Utils.base64Encoded(triggerData.getTriggerName()), triggerData));
+    }
+
+    //Filter from local cache
+    List<TriggerData> cacheTriggers = localTriggerDatas
+      .values()
+      .stream()
+      .filter(triggerData -> cacheName.equalsIgnoreCase(triggerData.getCacheName()))
+      .collect(Collectors.toList());
+
+    return cacheTriggers;
+  }
+
+  /**
+   * @param fieldName
+   * @param regEx
+   * @return
+   */
+  private JsonObject requestSelector(String fieldName, String regEx) {
     JsonObject request = new JsonObject();
-    JsonObject triggerNameSelector = new JsonObject();
+
     JsonObject triggerRegEx = new JsonObject();
-    triggerRegEx.addProperty("$regex", "^(.*)");
-    triggerNameSelector.add("triggerName", triggerRegEx);
-    request.add("selector", triggerNameSelector);
+    triggerRegEx.addProperty("$regex", (regEx == null || regEx.trim().length() == 0) ? "^(.*)" : regEx);
+
+    JsonObject triggerNameSelector = new JsonObject();
+    triggerNameSelector.add(fieldName, triggerRegEx);
+    request.add((fieldName == null || fieldName.trim().length() == 0) ? "selector" : fieldName, triggerNameSelector);
+
     JsonArray fields = new JsonArray();
     for (String field : SELECTOR_FIELDS) {
       fields.add(field);
     }
+
     return request;
   }
 
-
+  /**
+   * @param response
+   * @param s
+   * @return
+   */
+  private List<TriggerData> extractDocs(JsonObject response, String s) {
+    log.info("Extracing Docs from JSON: {}", response);
+    List<TriggerData> docs = new ArrayList<>();
+    if (response.has("docs")) {
+      JsonArray jsonElements = response.get("docs").getAsJsonArray();
+      log.debug(s, jsonElements.size());
+      jsonElements.forEach(e -> {
+        docs.add(gson.fromJson(e, TriggerData.class));
+      });
+    }
+    return docs;
+  }
 }
