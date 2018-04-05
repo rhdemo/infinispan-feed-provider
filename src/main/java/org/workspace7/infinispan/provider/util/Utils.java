@@ -10,7 +10,7 @@ public class Utils {
 
   public static String shortTriggerID(String triggerName) {
 
-    if (triggerName != null && triggerName.indexOf("/") != -1) {
+    if (triggerName != null && triggerName.contains("/")) {
       String[] triggerNameArray = triggerName.split("/");
       return triggerNameArray[triggerNameArray.length - 1];
     }
@@ -19,14 +19,11 @@ public class Utils {
   }
 
   public static String base64Encoded(String text) {
-    byte[] encodedText = Base64.getEncoder().encode(
-      text.getBytes(Charset.forName("US-ASCII")));
-    return new String(encodedText);
+    return Base64.getEncoder().encodeToString(text.getBytes(Charset.forName("US-ASCII")));
   }
 
   public static String base64Decode(String text) {
-    byte[] decodedText = Base64.getDecoder().decode(
-      text.getBytes(Charset.forName("US-ASCII")));
+    byte[] decodedText = Base64.getDecoder().decode(text);
     return new String(decodedText);
   }
 }
